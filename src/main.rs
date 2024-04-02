@@ -12,9 +12,7 @@ fn main() {
             }
             _ => {}
         }
-
     }
-
 }
 
 fn create_category() -> Category {
@@ -77,6 +75,5 @@ mod tests {
     use crate::create_category;
 
     #[test]
-    fn test_create_category() {
-    }
+    fn test_create_category() {}
 }
