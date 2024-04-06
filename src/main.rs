@@ -4,20 +4,17 @@ mod mongo_repository;
 mod repository;
 mod transaction;
 
-use category::{create_category, Category};
+use category::create_category;
 use input::get_input;
 use repository::Repository;
-use transaction::{create_transaction, Transaction};
+use transaction::create_transaction;
 
 fn main() {
     let repository = Repository::new();
-    let _ = repository.find_transaction();
+    get_user_input(repository);
 }
 
-fn get_user_input() {
-    let mut categories: Vec<Category> = Vec::new();
-    let mut transactions: Vec<Transaction> = Vec::new();
-
+fn get_user_input(repository: Repository) {
     loop {
         println!("\nSelect an option:\nq: Quit\n1: Create category\n2: Add transaction\n3: Show categories\n4: Show transactions\n");
         let choice = get_input();
@@ -26,30 +23,32 @@ fn get_user_input() {
             "1" => {
                 let category = create_category();
                 println!("Created category {:?}", category);
-                categories.push(category);
             }
             "2" => {
                 let transaction = create_transaction();
                 println!("Created transaction {:?}", transaction);
-                transactions.push(transaction);
             }
             "3" => {
                 let mut sum: f64 = 0.0;
-                for category in &categories {
-                    for transaction in &transactions {
-                        if transaction.category == category.name {
-                            sum += transaction.amount;
-                        }
-                    }
-                    println!("{:?}: spent {}", category, sum);
-                }
+                // for category in &categories {
+                //     for transaction in &transactions {
+                //         if transaction.category == category.name {
+                //             sum += transaction.amount;
+                //         }
+                //     }
+                //     println!("{:?}: spent {}", category, sum);
+                // }
             }
-            "4" => {
-                for transaction in &transactions {
-                    println!("{:?}", transaction);
-                }
-            }
+            "4" => print_transactions(&repository),
             _ => {}
         }
+    }
+}
+
+fn print_transactions(repository: &Repository) {
+    let txns = repository.find_transaction().unwrap();
+
+    for txn in txns {
+        println!("{:?}", txn)
     }
 }
