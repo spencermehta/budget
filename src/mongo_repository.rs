@@ -26,6 +26,12 @@ impl Repository {
 
         Ok(txns)
     }
+
+    pub fn insert_transaction(&self, transaction: Transaction) -> mongodb::error::Result<()> {
+        let docs = vec![transaction];
+        self.transactions.insert_many(docs, None)?;
+        Ok(())
+    }
 }
 
 fn connect() -> mongodb::error::Result<Client> {
@@ -35,15 +41,4 @@ fn connect() -> mongodb::error::Result<Client> {
     client_options.server_api = Some(server_api);
     let client = Client::with_options(client_options)?;
     Ok(client)
-}
-
-pub fn insert() {
-    // let collection = db.collection::<Transaction>("transactions");
-    let docs = vec![Transaction {
-        party: "sainsbury's".to_string(),
-        category: "Groceries".to_string(),
-        amount: 100.0,
-    }];
-
-    // collection.insert_many(docs, None)?;
 }
