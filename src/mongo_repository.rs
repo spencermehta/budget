@@ -2,7 +2,6 @@ use crate::repository::Repository;
 use std::env;
 
 use mongodb::{
-    bson::doc,
     options::{ClientOptions, ServerApi, ServerApiVersion},
     sync::Client,
 };
@@ -15,22 +14,6 @@ impl Repository {
         let db = client.database("transactions");
         let transactions = db.collection::<Transaction>("transactions");
         Repository { db, transactions }
-    }
-
-    pub fn find_transaction(&self) -> mongodb::error::Result<Vec<Transaction>> {
-        let cursor = self.transactions.find(doc! {}, None)?;
-        let mut txns = Vec::new();
-        for txn in cursor {
-            txns.push(txn.unwrap())
-        }
-
-        Ok(txns)
-    }
-
-    pub fn insert_transaction(&self, transaction: Transaction) -> mongodb::error::Result<()> {
-        let docs = vec![transaction];
-        self.transactions.insert_many(docs, None)?;
-        Ok(())
     }
 }
 
