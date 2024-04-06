@@ -6,16 +6,12 @@ mod transaction;
 
 use category::{create_category, Category};
 use input::get_input;
-use mongo_repository::connect;
+use repository::Repository;
 use transaction::{create_transaction, Transaction};
 
 fn main() {
-    let res = connect();
-    match res {
-        Ok(_) => println!("ok"),
-        Err(e) => println!("{}", e),
-    }
-    println!("connected")
+    let repository = Repository::new();
+    let _ = repository.find_transaction();
 }
 
 fn get_user_input() {
