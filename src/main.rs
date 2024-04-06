@@ -1,12 +1,24 @@
 mod category;
 mod input;
+mod mongo_repository;
+mod repository;
 mod transaction;
 
 use category::{create_category, Category};
 use input::get_input;
+use mongo_repository::connect;
 use transaction::{create_transaction, Transaction};
 
 fn main() {
+    let res = connect();
+    match res {
+        Ok(_) => println!("ok"),
+        Err(e) => println!("{}", e),
+    }
+    println!("connected")
+}
+
+fn get_user_input() {
     let mut categories: Vec<Category> = Vec::new();
     let mut transactions: Vec<Transaction> = Vec::new();
 
@@ -26,8 +38,14 @@ fn main() {
                 transactions.push(transaction);
             }
             "3" => {
+                let mut sum: f64 = 0.0;
                 for category in &categories {
-                    println!("{:?}", category);
+                    for transaction in &transactions {
+                        if transaction.category == category.name {
+                            sum += transaction.amount;
+                        }
+                    }
+                    println!("{:?}: spent {}", category, sum);
                 }
             }
             "4" => {

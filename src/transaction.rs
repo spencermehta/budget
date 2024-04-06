@@ -1,10 +1,11 @@
 use crate::input::{get_float_input, get_input};
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Transaction {
-    party: String,
-    category: String,
-    amount: f64,
+    pub party: String,
+    pub category: String,
+    pub amount: f64,
 }
 
 pub fn create_transaction() -> Transaction {
