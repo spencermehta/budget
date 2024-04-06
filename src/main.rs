@@ -15,7 +15,7 @@ fn main() {
 
 fn get_user_input(repository: Repository) {
     loop {
-        println!("\nSelect an option:\nq: Quit\n1: Add transaction\n2: Show transactions\n");
+        println!("\nSelect an option:\nq: Quit\n1: Add transaction\n2: Show transactions\n3: List categories");
         let choice = get_input();
         match choice.as_str() {
             "q" => break,
@@ -23,9 +23,15 @@ fn get_user_input(repository: Repository) {
                 insert_transaction(&repository);
             }
             "2" => print_transactions(&repository),
+            "3" => print_categories(&repository),
             _ => {}
         }
     }
+}
+
+fn insert_transaction(repository: &Repository) {
+    let transaction = create_transaction();
+    let _ = repository.insert_transaction(transaction);
 }
 
 fn print_transactions(repository: &Repository) {
@@ -36,7 +42,9 @@ fn print_transactions(repository: &Repository) {
     }
 }
 
-fn insert_transaction(repository: &Repository) {
-    let transaction = create_transaction();
-    let _ = repository.insert_transaction(transaction);
+fn print_categories(repository: &Repository) {
+    let categories = repository.list_categories().unwrap();
+    for category in categories {
+        println!("{}", category);
+    }
 }
