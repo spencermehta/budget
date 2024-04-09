@@ -1,4 +1,4 @@
-use crate::input::{get_float_input, get_input};
+use crate::input;
 use crate::repository::Repository;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -36,11 +36,11 @@ impl Repository {
 
 pub fn create_transaction() -> Transaction {
     println!("Payee:");
-    let party = get_input();
+    let party = input::get_input();
     println!("Category:");
-    let category = get_input();
+    let category = input::get_input();
     println!("Amount:");
-    let amount = get_float_input();
+    let amount = input::get_float_input();
 
     Transaction {
         date: Utc::now(),

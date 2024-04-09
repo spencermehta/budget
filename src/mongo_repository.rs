@@ -1,4 +1,4 @@
-use crate::repository::Repository;
+use crate::{category::BudgetCategory, repository::Repository};
 use std::env;
 
 use mongodb::{
@@ -13,7 +13,13 @@ impl Repository {
         let client = connect().unwrap();
         let db = client.database("transactions");
         let transactions = db.collection::<Transaction>("transactions");
-        Repository { db, transactions }
+        let categories = db.collection::<BudgetCategory>("categories");
+
+        Repository {
+            db,
+            transactions,
+            categories,
+        }
     }
 }
 
