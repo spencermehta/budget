@@ -3,6 +3,7 @@ use crate::repository::Repository;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
+use futures_util::TryStreamExt;
 use mongodb::bson::doc;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -19,30 +20,27 @@ struct SpentAggregate {
 }
 
 impl Repository {
-    pub fn find_transaction(&self) -> mongodb::error::Result<Vec<Transaction>> {
-        let cursor = self.transactions.find(doc! {}, None)?;
+    pub async fn find_transaction(&self) -> mongodb::error::Result<Vec<Transaction>> {
+        let mut cursor = self.transactions.find(doc! {}, None).await?;
         let mut txns = Vec::new();
-        for txn in cursor {
-            match txn {
-                Ok(t) => txns.push(t),
-                Err(e) => println!("{}", e),
-            }
+        while let Some(txn) = cursor.try_next().await? {
+            txns.push(txn);
         }
 
         Ok(txns)
     }
 
-    pub fn insert_transaction(&self, transaction: Transaction) -> mongodb::error::Result<()> {
+    pub async fn insert_transaction(&self, transaction: Transaction) -> mongodb::error::Result<()> {
         let docs = vec![transaction];
-        self.transactions.insert_many(docs, None)?;
+        self.transactions.insert_many(docs, None).await?;
         Ok(())
     }
 
-    pub fn get_available_to_budget(&self) -> mongodb::error::Result<f64> {
+    pub async fn get_available_to_budget(&self) -> mongodb::error::Result<f64> {
         let pipeline =
             vec![doc! {"$group": doc! {"_id": "sum", "spent": doc! {"$sum": "$amount"}}}];
-        let mut results = self.transactions.aggregate(pipeline, None)?;
-        if let Some(Ok(sum)) = results.next() {
+        let mut results = self.transactions.aggregate(pipeline, None).await?;
+        if let Some(sum) = results.try_next().await? {
             let doc = bson::from_document::<SpentAggregate>(sum);
             Ok(doc.unwrap().spent)
         } else {

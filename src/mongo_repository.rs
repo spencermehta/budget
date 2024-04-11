@@ -3,14 +3,14 @@ use std::env;
 
 use mongodb::{
     options::{ClientOptions, ServerApi, ServerApiVersion},
-    sync::Client,
+    Client,
 };
 
 use crate::transaction::Transaction;
 
 impl Repository {
-    pub fn new() -> Repository {
-        let client = connect().unwrap();
+    pub async fn new() -> Repository {
+        let client = connect().await.unwrap();
         let db = client.database("transactions");
         let transactions = db.collection::<Transaction>("transactions");
         let categories = db.collection::<BudgetCategory>("categories");
@@ -23,9 +23,9 @@ impl Repository {
     }
 }
 
-fn connect() -> mongodb::error::Result<Client> {
+async fn connect() -> mongodb::error::Result<Client> {
     let connection_string = env::var("MONGO_STRING").unwrap();
-    let mut client_options = ClientOptions::parse(connection_string)?;
+    let mut client_options = ClientOptions::parse(connection_string).await?;
     let server_api = ServerApi::builder().version(ServerApiVersion::V1).build();
     client_options.server_api = Some(server_api);
     let client = Client::with_options(client_options)?;

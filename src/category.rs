@@ -4,6 +4,7 @@ use mongodb::bson::doc;
 use serde::{Deserialize, Serialize};
 
 use crate::repository::Repository;
+use futures_util::TryStreamExt;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Category {
@@ -24,8 +25,11 @@ pub struct BudgetCategory {
 }
 
 impl Repository {
-    pub fn list_categories(&self) -> mongodb::error::Result<Vec<String>> {
-        let categories = self.transactions.distinct("category", doc! {}, None)?;
+    pub async fn list_categories(&self) -> mongodb::error::Result<Vec<String>> {
+        let categories = self
+            .transactions
+            .distinct("category", doc! {}, None)
+            .await?;
         let mut category_names = Vec::new();
         for category in categories {
             category_names.push(category.as_str().unwrap().to_string());
@@ -33,7 +37,7 @@ impl Repository {
         Ok(category_names)
     }
 
-    pub fn category_spends(&self) -> mongodb::error::Result<Vec<Category>> {
+    pub async fn category_spends(&self) -> mongodb::error::Result<Vec<Category>> {
         let pipeline = vec![
             doc! {"$group": doc! {"_id": "$category", "spent": doc! {"$sum": "$amount"}}},
             doc! {
@@ -44,41 +48,41 @@ impl Repository {
 
             },
         ];
-        let results = self.transactions.aggregate(pipeline, None)?;
+        let mut results = self.transactions.aggregate(pipeline, None).await?;
         let mut categories = Vec::new();
-        for res in results {
-            match res {
-                Ok(category) => {
-                    let doc = bson::from_document::<TransactionCategory>(category);
-                    let transaction_category = doc.unwrap();
-                    let budget_category = self
-                        .get_budget_for_category(&transaction_category.name)
-                        .unwrap();
-                    categories.push(Category {
-                        transaction_category,
-                        budget_category,
-                    });
-                }
-                Err(e) => println!("{}", e),
-            }
+
+        while let Some(category) = results.try_next().await? {
+            let doc = bson::from_document::<TransactionCategory>(category);
+            let transaction_category = doc.unwrap();
+            let budget_category = self
+                .get_budget_for_category(&transaction_category.name)
+                .await?;
+            categories.push(Category {
+                transaction_category,
+                budget_category,
+            });
         }
 
         Ok(categories)
     }
 
-    pub fn set_budget_for_category(&self, category: BudgetCategory) -> mongodb::error::Result<()> {
+    pub async fn set_budget_for_category(
+        &self,
+        category: BudgetCategory,
+    ) -> mongodb::error::Result<()> {
         let docs = vec![category];
-        self.categories.insert_many(docs, None)?;
+        self.categories.insert_many(docs, None).await?;
         Ok(())
     }
 
-    pub fn get_budget_for_category(
+    pub async fn get_budget_for_category(
         &self,
         category_name: &String,
     ) -> mongodb::error::Result<BudgetCategory> {
         let cursor = self
             .categories
-            .find_one(doc! { "name": category_name }, None)?;
+            .find_one(doc! { "name": category_name }, None)
+            .await?;
 
         match cursor {
             Some(category) => Ok(category),
