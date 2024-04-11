@@ -4,16 +4,40 @@ mod mongo_repository;
 mod repository;
 mod transaction;
 
+use axum::{extract::State, http::StatusCode, routing::get, Json, Router};
 use repository::Repository;
+use std::sync::Arc;
+use transaction::Transaction;
+
+struct AppState {
+    repository: Repository,
+}
 
 #[tokio::main]
-async fn main() -> mongodb::error::Result<()> {
+async fn main() {
     let repository = Repository::new().await;
+    let shared_state = Arc::new(AppState { repository });
+    let app = Router::new()
+        .route("/", get(root))
+        .route("/transactions", get(get_transactions))
+        .with_state(shared_state);
+
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+    axum::serve(listener, app).await.unwrap();
+}
 
-    get_user_input(repository).await?;
+async fn root() -> &'static str {
+    "Hello, world!"
+}
 
-    Ok(())
+async fn get_transactions(
+    State(state): State<Arc<AppState>>,
+) -> (StatusCode, Json<Vec<Transaction>>) {
+    if let Ok(txns) = state.repository.find_transaction().await {
+        (StatusCode::OK, Json(txns))
+    } else {
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(Vec::new()))
+    }
 }
 
 async fn get_user_input(repository: Repository) -> mongodb::error::Result<()> {
