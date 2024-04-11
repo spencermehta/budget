@@ -13,6 +13,11 @@ pub struct Transaction {
     pub amount: f64,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+struct SpentAggregate {
+    spent: f64,
+}
+
 impl Repository {
     pub fn find_transaction(&self) -> mongodb::error::Result<Vec<Transaction>> {
         let cursor = self.transactions.find(doc! {}, None)?;
@@ -31,6 +36,18 @@ impl Repository {
         let docs = vec![transaction];
         self.transactions.insert_many(docs, None)?;
         Ok(())
+    }
+
+    pub fn get_available_to_budget(&self) -> mongodb::error::Result<f64> {
+        let pipeline =
+            vec![doc! {"$group": doc! {"_id": "sum", "spent": doc! {"$sum": "$amount"}}}];
+        let mut results = self.transactions.aggregate(pipeline, None)?;
+        if let Some(Ok(sum)) = results.next() {
+            let doc = bson::from_document::<SpentAggregate>(sum);
+            Ok(doc.unwrap().spent)
+        } else {
+            Ok(0.0)
+        }
     }
 }
 

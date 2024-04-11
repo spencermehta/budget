@@ -13,6 +13,8 @@ fn main() {
 
 fn get_user_input(repository: Repository) {
     loop {
+        let available = repository.get_available_to_budget().unwrap();
+        println!("You have {} left to budget.", available);
         println!("\nSelect an option:\nq: Quit\n1: Add transaction\n2: Show transactions\n3: List categories\n4: Show expenditure\n5: Set budget");
         let choice = input::get_input();
         match choice.as_str() {
