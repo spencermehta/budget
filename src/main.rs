@@ -5,9 +5,10 @@ mod repository;
 mod transaction;
 
 use axum::{extract::State, http::StatusCode, routing::get, Json, Router};
+use chrono::Utc;
 use repository::Repository;
 use std::sync::Arc;
-use transaction::Transaction;
+use transaction::{CreateTransaction, Transaction};
 
 struct AppState {
     repository: Repository,
@@ -19,7 +20,10 @@ async fn main() {
     let shared_state = Arc::new(AppState { repository });
     let app = Router::new()
         .route("/", get(root))
-        .route("/transactions", get(get_transactions))
+        .route(
+            "/transaction",
+            get(get_transactions).post(create_transaction),
+        )
         .with_state(shared_state);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
@@ -37,6 +41,24 @@ async fn get_transactions(
         (StatusCode::OK, Json(txns))
     } else {
         (StatusCode::INTERNAL_SERVER_ERROR, Json(Vec::new()))
+    }
+}
+
+async fn create_transaction(
+    State(state): State<Arc<AppState>>,
+    Json(payload): Json<CreateTransaction>,
+) -> StatusCode {
+    let txn = Transaction {
+        date: Utc::now(),
+        party: payload.party,
+        category: payload.category,
+        amount: payload.amount,
+    };
+
+    if let Ok(_) = state.repository.insert_transaction(txn).await {
+        StatusCode::CREATED
+    } else {
+        StatusCode::INTERNAL_SERVER_ERROR
     }
 }
 

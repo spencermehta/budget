@@ -7,6 +7,13 @@ use futures_util::TryStreamExt;
 use mongodb::bson::doc;
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct CreateTransaction {
+    pub party: String,
+    pub category: String,
+    pub amount: f64,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Transaction {
     pub date: DateTime<Utc>,
     pub party: String,
