@@ -1,0 +1,17 @@
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout master
+        uses: actions/checkout@main
+
+      - uses: swatinem/rust-cache@v2
+
+      - run: rustup toolchain install stable --profile minimal
+
+      - run: cargo build --release
