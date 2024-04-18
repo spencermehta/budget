@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: "cluster-mongodb"
+  namespace: budget
+spec:
+  type: ExternalName
+  externalName: cluster0.yp86lcm.mongodb.net

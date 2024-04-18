@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: budget
+    #kind: Deployment
+    #metadata:
+    #  name: budget
+    # spec:
+    #   replicas: 1
+    #   selector:
+    #     matchLabels:
+    #       app: backend
+    #   template:
+    #     metadata:
+    #       labels:
+    #         app: backend
+    #     spec:
+    #       containers:
+    #         - name: budget
+    #           image: registry.docker.com/spencermehta/budget:latest
+    #           imagePullPolicy: Always
