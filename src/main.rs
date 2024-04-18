@@ -26,7 +26,7 @@ async fn main() {
         )
         .with_state(shared_state);
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:8080").await.unwrap();
     axum::serve(listener, app).await.unwrap();
 }
 
@@ -37,6 +37,7 @@ async fn root() -> &'static str {
 async fn get_transactions(
     State(state): State<Arc<AppState>>,
 ) -> (StatusCode, Json<Vec<Transaction>>) {
+    println!("Get transaction");
     if let Ok(txns) = state.repository.find_transaction().await {
         (StatusCode::OK, Json(txns))
     } else {

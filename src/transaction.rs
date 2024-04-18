@@ -28,8 +28,10 @@ struct SpentAggregate {
 
 impl Repository {
     pub async fn find_transaction(&self) -> mongodb::error::Result<Vec<Transaction>> {
+        println!("Finding txns");
         let mut cursor = self.transactions.find(doc! {}, None).await?;
         let mut txns = Vec::new();
+        println!("Filtering txns");
         while let Some(txn) = cursor.try_next().await? {
             txns.push(txn);
         }
