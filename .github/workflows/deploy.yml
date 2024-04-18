@@ -44,8 +44,8 @@ jobs:
               with:
                   namespace: default
                   manifests: |
-                      deployment/namespace.yaml
-                      deployment/service.yaml
-                      deployment/deployment.yaml
+                      deployment/namespace.yml
+                      deployment/service.yml
+                      deployment/deployment.yml
                   images: |
                       docker.io/spencermehta/budget:${{ github.sha }}
