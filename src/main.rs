@@ -5,6 +5,7 @@ mod repository;
 mod transaction;
 
 use axum::{extract::State, http::StatusCode, routing::get, Json, Router};
+use category::BudgetCategory;
 use chrono::Utc;
 use repository::Repository;
 use std::sync::Arc;
@@ -24,6 +25,7 @@ async fn main() {
             "/transaction",
             get(get_transactions).post(create_transaction),
         )
+        .route("/category", get(get_categories))
         .with_state(shared_state);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8080").await.unwrap();
@@ -63,49 +65,12 @@ async fn create_transaction(
     }
 }
 
-async fn get_user_input(repository: Repository) -> mongodb::error::Result<()> {
-    loop {
-        let available = repository.get_available_to_budget().await?;
-        println!("You have {} left to budget.", available);
-        println!("\nSelect an option:\nq: Quit\n1: Add transaction\n2: Show transactions\n3: List categories\n4: Show expenditure\n5: Set budget");
-        let choice = input::get_input();
-        match choice.as_str() {
-            "q" => break,
-            "1" => {
-                insert_transaction(&repository);
-            }
-            "2" => print_transactions(&repository).await?,
-            "3" => print_categories(&repository).await?,
-            "4" => print_category_expenditure(&repository).await?,
-            "5" => set_budget_for_category(&repository),
-            _ => {}
-        }
+async fn get_categories(State(state): State<Arc<AppState>>) -> (StatusCode, Json<Vec<String>>) {
+    if let Ok(categories) = state.repository.list_categories().await {
+        (StatusCode::OK, Json(categories))
+    } else {
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(Vec::new()))
     }
-
-    Ok(())
-}
-
-fn insert_transaction(repository: &Repository) {
-    let transaction = transaction::create_transaction();
-    let _ = repository.insert_transaction(transaction);
-}
-
-async fn print_transactions(repository: &Repository) -> mongodb::error::Result<()> {
-    let txns = repository.find_transaction().await?;
-
-    for txn in txns {
-        println!("{:?}", txn)
-    }
-
-    Ok(())
-}
-
-async fn print_categories(repository: &Repository) -> mongodb::error::Result<()> {
-    let categories = repository.list_categories().await?;
-    for category in categories {
-        println!("{}", category);
-    }
-    Ok(())
 }
 
 async fn print_category_expenditure(repository: &Repository) -> mongodb::error::Result<()> {
