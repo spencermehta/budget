@@ -5,7 +5,7 @@ mod repository;
 mod transaction;
 
 use axum::{extract::State, http::StatusCode, routing::get, Json, Router};
-use category::BudgetCategory;
+use category::{BudgetCategory, Category};
 use chrono::Utc;
 use repository::Repository;
 use std::sync::Arc;
@@ -26,6 +26,7 @@ async fn main() {
             get(get_transactions).post(create_transaction),
         )
         .route("/category", get(get_categories))
+        .route("/category/expenditure", get(get_category_expenditure))
         .with_state(shared_state);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8080").await.unwrap();
@@ -73,12 +74,14 @@ async fn get_categories(State(state): State<Arc<AppState>>) -> (StatusCode, Json
     }
 }
 
-async fn print_category_expenditure(repository: &Repository) -> mongodb::error::Result<()> {
-    let categories = repository.category_spends().await?;
-    for category in categories {
-        println!("{:?}", category);
+async fn get_category_expenditure(
+    State(state): State<Arc<AppState>>,
+) -> (StatusCode, Json<Vec<Category>>) {
+    if let Ok(categories) = state.repository.category_spends().await {
+        (StatusCode::OK, Json(categories))
+    } else {
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(Vec::new()))
     }
-    Ok(())
 }
 
 fn set_budget_for_category(repository: &Repository) {
