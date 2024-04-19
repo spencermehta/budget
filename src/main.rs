@@ -1,11 +1,10 @@
 mod category;
-mod input;
 mod mongo_repository;
 mod repository;
 mod transaction;
 
 use axum::{extract::State, http::StatusCode, routing::get, Json, Router};
-use category::{BudgetCategory, Category};
+use category::Category;
 use chrono::Utc;
 use repository::Repository;
 use std::sync::Arc;
@@ -84,7 +83,9 @@ async fn get_category_expenditure(
     }
 }
 
+/*
 fn set_budget_for_category(repository: &Repository) {
     let category = category::create_category();
     let _ = repository.set_budget_for_category(category);
 }
+*/

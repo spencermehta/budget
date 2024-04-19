@@ -93,12 +93,3 @@ impl Repository {
         }
     }
 }
-
-pub fn create_category() -> BudgetCategory {
-    println!("Category:");
-    let name = input::get_input();
-    println!("Budget:");
-    let budget = input::get_float_input();
-
-    BudgetCategory { name, budget }
-}
