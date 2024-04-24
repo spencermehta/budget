@@ -26,7 +26,6 @@ async fn main() {
     let repository = Repository::new().await;
     let shared_state = Arc::new(AppState { repository });
     let app = Router::new()
-        .route("/", get(root))
         .route(
             "/transaction",
             get(get_transactions).post(create_transaction),
@@ -40,10 +39,6 @@ async fn main() {
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8080").await.unwrap();
     axum::serve(listener, app).await.unwrap();
-}
-
-async fn root() -> &'static str {
-    "Hello, world!"
 }
 
 async fn get_transactions(
