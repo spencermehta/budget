@@ -85,7 +85,7 @@ async fn assign_to_category(
     State(state): State<Arc<AppState>>,
     Json(payload): Json<CategoryAssignment>,
 ) -> StatusCode {
-    if let Ok(_) = state.repository.set_budget_for_category(payload).await {
+    if let Ok(_) = state.repository.assign_to_category(payload).await {
         StatusCode::OK
     } else {
         StatusCode::INTERNAL_SERVER_ERROR

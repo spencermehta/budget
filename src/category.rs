@@ -79,7 +79,7 @@ impl Repository {
             let doc = bson::from_document::<TransactionCategory>(category);
             let transaction_category = doc.unwrap();
             let budget_category = self
-                .get_budget_for_category(&budget_id, &transaction_category.name, date)
+                .get_category_assignment(&budget_id, &transaction_category.name, date)
                 .await?;
             categories.push(Category {
                 name: transaction_category.name,
@@ -91,7 +91,7 @@ impl Repository {
         Ok(categories)
     }
 
-    pub async fn set_budget_for_category(
+    pub async fn assign_to_category(
         &self,
         category: CategoryAssignment,
     ) -> mongodb::error::Result<()> {
@@ -112,7 +112,7 @@ impl Repository {
         Ok(())
     }
 
-    pub async fn get_budget_for_category(
+    pub async fn get_category_assignment(
         &self,
         budget_id: &String,
         category_name: &String,
