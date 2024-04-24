@@ -1,6 +1,5 @@
 mod category;
 mod error;
-mod mongo_repository;
 mod repository;
 mod transaction;
 
