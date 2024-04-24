@@ -25,6 +25,7 @@ pub struct CategoryAssignment {
     pub budget_id: String,
     pub name: String,
     pub assigned: f64,
+    pub date: NaiveDate,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -78,7 +79,7 @@ impl Repository {
             let doc = bson::from_document::<TransactionCategory>(category);
             let transaction_category = doc.unwrap();
             let budget_category = self
-                .get_budget_for_category(&budget_id, &transaction_category.name)
+                .get_budget_for_category(&budget_id, &transaction_category.name, date)
                 .await?;
             categories.push(Category {
                 name: transaction_category.name,
@@ -94,7 +95,15 @@ impl Repository {
         &self,
         category: CategoryAssignment,
     ) -> mongodb::error::Result<()> {
-        let filter = doc! { "name": &category.name };
+        let date_filter_lower = format!("{}-{:0>2}", category.date.year(), category.date.month());
+        let date_filter_upper =
+            format!("{}-{:0>2}", category.date.year(), category.date.month() + 1);
+
+        let filter = doc! { "name": &category.name, "date": {
+            "$lt": date_filter_upper,
+            "$gte": date_filter_lower,
+        } };
+
         let options = ReplaceOptions::builder().upsert(true).build();
 
         self.categories
@@ -107,10 +116,20 @@ impl Repository {
         &self,
         budget_id: &String,
         category_name: &String,
+        date: NaiveDate,
     ) -> mongodb::error::Result<CategoryAssignment> {
+        let date_filter_lower = format!("{}-{:0>2}", date.year(), date.month());
+        let date_filter_upper = format!("{}-{:0>2}", date.year(), date.month() + 1);
+
         let cursor = self
             .categories
-            .find_one(doc! { "budget_id": budget_id, "name": category_name }, None)
+            .find_one(
+                doc! { "budget_id": budget_id, "name": category_name, "date": {
+                    "$lt": date_filter_upper,
+                    "$gt": date_filter_lower,
+                } },
+                None,
+            )
             .await?;
 
         match cursor {
@@ -119,6 +138,7 @@ impl Repository {
                 budget_id: budget_id.to_string(),
                 name: category_name.to_string(),
                 assigned: 0.0,
+                date,
             }),
         }
     }
