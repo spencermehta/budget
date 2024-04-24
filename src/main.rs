@@ -1,19 +1,14 @@
 mod category;
+mod error;
 mod mongo_repository;
 mod repository;
 mod transaction;
 
-use axum::{
-    extract::State,
-    http::StatusCode,
-    response::{IntoResponse, Response},
-    routing::get,
-    Json, Router,
-};
+use axum::{extract::State, http::StatusCode, routing::get, Json, Router};
 use category::{BudgetCategory, Category};
 use chrono::Utc;
+use error::ApiError;
 use repository::Repository;
-use serde_json::json;
 use std::sync::Arc;
 use transaction::{CreateTransaction, Transaction};
 
@@ -44,7 +39,6 @@ async fn main() {
 async fn get_transactions(
     State(state): State<Arc<AppState>>,
 ) -> (StatusCode, Json<Vec<Transaction>>) {
-    println!("Get transaction");
     if let Ok(txns) = state.repository.find_transaction().await {
         (StatusCode::OK, Json(txns))
     } else {
@@ -84,25 +78,6 @@ async fn get_category_expenditure(
     match state.repository.category_spends().await {
         Ok(categories) => Ok(Json(categories)),
         Err(e) => Err(ApiError::Error(e.to_string())),
-    }
-}
-
-enum ApiError {
-    Error(String),
-}
-
-impl IntoResponse for ApiError {
-    fn into_response(self) -> Response {
-        let status = StatusCode::INTERNAL_SERVER_ERROR;
-        let error_message = match self {
-            ApiError::Error(msg) => msg,
-        };
-
-        let body = Json(json! ({
-            "error": error_message,
-        }));
-
-        (status, body).into_response()
     }
 }
 
