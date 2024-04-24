@@ -3,10 +3,17 @@ mod mongo_repository;
 mod repository;
 mod transaction;
 
-use axum::{extract::State, http::StatusCode, routing::get, Json, Router};
-use category::Category;
+use axum::{
+    extract::State,
+    http::StatusCode,
+    response::{IntoResponse, Response},
+    routing::get,
+    Json, Router,
+};
+use category::{BudgetCategory, Category};
 use chrono::Utc;
 use repository::Repository;
+use serde_json::json;
 use std::sync::Arc;
 use transaction::{CreateTransaction, Transaction};
 
@@ -24,7 +31,10 @@ async fn main() {
             "/transaction",
             get(get_transactions).post(create_transaction),
         )
-        .route("/category", get(get_categories))
+        .route(
+            "/category",
+            get(get_categories).post(set_budget_for_category),
+        )
         .route("/category/expenditure", get(get_category_expenditure))
         .with_state(shared_state);
 
@@ -75,17 +85,39 @@ async fn get_categories(State(state): State<Arc<AppState>>) -> (StatusCode, Json
 
 async fn get_category_expenditure(
     State(state): State<Arc<AppState>>,
-) -> (StatusCode, Json<Vec<Category>>) {
-    if let Ok(categories) = state.repository.category_spends().await {
-        (StatusCode::OK, Json(categories))
-    } else {
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(Vec::new()))
+) -> Result<Json<Vec<Category>>, ApiError> {
+    match state.repository.category_spends().await {
+        Ok(categories) => Ok(Json(categories)),
+        Err(e) => Err(ApiError::Error(e.to_string())),
     }
 }
 
-/*
-fn set_budget_for_category(repository: &Repository) {
-    let category = category::create_category();
-    let _ = repository.set_budget_for_category(category);
+enum ApiError {
+    Error(String),
 }
-*/
+
+impl IntoResponse for ApiError {
+    fn into_response(self) -> Response {
+        let status = StatusCode::INTERNAL_SERVER_ERROR;
+        let error_message = match self {
+            ApiError::Error(msg) => msg,
+        };
+
+        let body = Json(json! ({
+            "error": error_message,
+        }));
+
+        (status, body).into_response()
+    }
+}
+
+async fn set_budget_for_category(
+    State(state): State<Arc<AppState>>,
+    Json(payload): Json<BudgetCategory>,
+) -> StatusCode {
+    if let Ok(_) = state.repository.set_budget_for_category(payload).await {
+        StatusCode::OK
+    } else {
+        StatusCode::INTERNAL_SERVER_ERROR
+    }
+}

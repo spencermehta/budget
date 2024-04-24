@@ -1,6 +1,5 @@
-use crate::input;
 use bson;
-use mongodb::bson::doc;
+use mongodb::{bson::doc, options::ReplaceOptions};
 use serde::{Deserialize, Serialize};
 
 use crate::repository::Repository;
@@ -8,8 +7,9 @@ use futures_util::TryStreamExt;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Category {
-    transaction_category: TransactionCategory,
-    budget_category: BudgetCategory,
+    pub name: String,
+    pub spent: f64,
+    pub assigned: f64,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -21,7 +21,7 @@ pub struct TransactionCategory {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct BudgetCategory {
     pub name: String,
-    pub budget: f64,
+    pub assigned: f64,
 }
 
 impl Repository {
@@ -58,8 +58,9 @@ impl Repository {
                 .get_budget_for_category(&transaction_category.name)
                 .await?;
             categories.push(Category {
-                transaction_category,
-                budget_category,
+                name: transaction_category.name,
+                spent: transaction_category.spent,
+                assigned: budget_category.assigned,
             });
         }
 
@@ -70,8 +71,12 @@ impl Repository {
         &self,
         category: BudgetCategory,
     ) -> mongodb::error::Result<()> {
-        let docs = vec![category];
-        self.categories.insert_many(docs, None).await?;
+        let filter = doc! { "name": &category.name };
+        let options = ReplaceOptions::builder().upsert(true).build();
+
+        self.categories
+            .replace_one(filter, category, options)
+            .await?;
         Ok(())
     }
 
@@ -88,7 +93,7 @@ impl Repository {
             Some(category) => Ok(category),
             None => Ok(BudgetCategory {
                 name: category_name.to_string(),
-                budget: 0.0,
+                assigned: 0.0,
             }),
         }
     }
