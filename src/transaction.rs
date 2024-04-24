@@ -1,20 +1,14 @@
 use crate::repository::Repository;
-use chrono::{DateTime, Utc};
+use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
 use futures_util::TryStreamExt;
 use mongodb::bson::doc;
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct CreateTransaction {
-    pub party: String,
-    pub category: String,
-    pub amount: f64,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
 pub struct Transaction {
-    pub date: DateTime<Utc>,
+    pub budget_id: String,
+    pub date: NaiveDate,
     pub party: String,
     pub category: String,
     pub amount: f64,
@@ -26,11 +20,15 @@ struct SpentAggregate {
 }
 
 impl Repository {
-    pub async fn find_transaction(&self) -> mongodb::error::Result<Vec<Transaction>> {
-        println!("Finding txns");
-        let mut cursor = self.transactions.find(doc! {}, None).await?;
+    pub async fn find_transactions(
+        &self,
+        budget_id: String,
+    ) -> mongodb::error::Result<Vec<Transaction>> {
+        let mut cursor = self
+            .transactions
+            .find(doc! { "budget_id": budget_id }, None)
+            .await?;
         let mut txns = Vec::new();
-        println!("Filtering txns");
         while let Some(txn) = cursor.try_next().await? {
             txns.push(txn);
         }

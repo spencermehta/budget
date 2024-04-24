@@ -1,12 +1,12 @@
 use mongodb::Collection;
 use std::env;
 
-use crate::{category::BudgetCategory, transaction::Transaction};
+use crate::{category::CategoryAssignment, transaction::Transaction};
 
 pub struct Repository {
     pub db: mongodb::Database,
     pub transactions: Collection<Transaction>,
-    pub categories: Collection<BudgetCategory>,
+    pub categories: Collection<CategoryAssignment>,
 }
 
 use mongodb::{
@@ -19,7 +19,7 @@ impl Repository {
         let client = connect().await.unwrap();
         let db = client.database("transactions");
         let transactions = db.collection::<Transaction>("transactions");
-        let categories = db.collection::<BudgetCategory>("categories");
+        let categories = db.collection::<CategoryAssignment>("categories");
 
         Repository {
             db,

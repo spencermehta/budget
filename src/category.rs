@@ -19,16 +19,17 @@ pub struct TransactionCategory {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct BudgetCategory {
+pub struct CategoryAssignment {
+    pub budget_id: String,
     pub name: String,
     pub assigned: f64,
 }
 
 impl Repository {
-    pub async fn list_categories(&self) -> mongodb::error::Result<Vec<String>> {
+    pub async fn list_categories(&self, budget_id: String) -> mongodb::error::Result<Vec<String>> {
         let categories = self
             .transactions
-            .distinct("category", doc! {}, None)
+            .distinct("category", doc! { "budget_id": budget_id }, None)
             .await?;
         let mut category_names = Vec::new();
         for category in categories {
@@ -37,8 +38,12 @@ impl Repository {
         Ok(category_names)
     }
 
-    pub async fn category_spends(&self) -> mongodb::error::Result<Vec<Category>> {
+    pub async fn category_spends(
+        &self,
+        budget_id: String,
+    ) -> mongodb::error::Result<Vec<Category>> {
         let pipeline = vec![
+            doc! {"$match": doc! {"budget_id": &budget_id}},
             doc! {"$group": doc! {"_id": "$category", "spent": doc! {"$sum": "$amount"}}},
             doc! {
                 "$project": doc! {
@@ -55,7 +60,7 @@ impl Repository {
             let doc = bson::from_document::<TransactionCategory>(category);
             let transaction_category = doc.unwrap();
             let budget_category = self
-                .get_budget_for_category(&transaction_category.name)
+                .get_budget_for_category(&budget_id, &transaction_category.name)
                 .await?;
             categories.push(Category {
                 name: transaction_category.name,
@@ -69,7 +74,7 @@ impl Repository {
 
     pub async fn set_budget_for_category(
         &self,
-        category: BudgetCategory,
+        category: CategoryAssignment,
     ) -> mongodb::error::Result<()> {
         let filter = doc! { "name": &category.name };
         let options = ReplaceOptions::builder().upsert(true).build();
@@ -82,16 +87,18 @@ impl Repository {
 
     pub async fn get_budget_for_category(
         &self,
+        budget_id: &String,
         category_name: &String,
-    ) -> mongodb::error::Result<BudgetCategory> {
+    ) -> mongodb::error::Result<CategoryAssignment> {
         let cursor = self
             .categories
-            .find_one(doc! { "name": category_name }, None)
+            .find_one(doc! { "budget_id": budget_id, "name": category_name }, None)
             .await?;
 
         match cursor {
             Some(category) => Ok(category),
-            None => Ok(BudgetCategory {
+            None => Ok(CategoryAssignment {
+                budget_id: budget_id.to_string(),
                 name: category_name.to_string(),
                 assigned: 0.0,
             }),
