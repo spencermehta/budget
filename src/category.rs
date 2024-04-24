@@ -1,4 +1,6 @@
 use bson;
+use chrono::prelude::*;
+use chrono::NaiveDate;
 use mongodb::{bson::doc, options::ReplaceOptions};
 use serde::{Deserialize, Serialize};
 
@@ -25,6 +27,12 @@ pub struct CategoryAssignment {
     pub assigned: f64,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct CategoryExpenditureInput {
+    pub budget_id: String,
+    pub date: NaiveDate,
+}
+
 impl Repository {
     pub async fn list_categories(&self, budget_id: String) -> mongodb::error::Result<Vec<String>> {
         let categories = self
@@ -41,9 +49,19 @@ impl Repository {
     pub async fn category_spends(
         &self,
         budget_id: String,
+        date: NaiveDate,
     ) -> mongodb::error::Result<Vec<Category>> {
+        let date_filter_lower = format!("{}-{:0>2}", date.year(), date.month());
+        let date_filter_upper = format!("{}-{:0>2}", date.year(), date.month() + 1);
+
         let pipeline = vec![
-            doc! {"$match": doc! {"budget_id": &budget_id}},
+            doc! {"$match": doc! {
+                "budget_id": &budget_id,
+                "date": {
+                    "$lt": date_filter_upper,
+                    "$gte": date_filter_lower,
+                }
+            }},
             doc! {"$group": doc! {"_id": "$category", "spent": doc! {"$sum": "$amount"}}},
             doc! {
                 "$project": doc! {

@@ -9,7 +9,7 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
-use category::{Category, CategoryAssignment};
+use category::{Category, CategoryAssignment, CategoryExpenditureInput};
 use error::ApiError;
 use repository::Repository;
 use std::sync::Arc;
@@ -28,10 +28,7 @@ async fn main() {
         .route("/transaction", post(create_transaction))
         .route("/category/:budget_id", get(get_categories))
         .route("/category", post(assign_to_category))
-        .route(
-            "/category/:budget_id/expenditure",
-            get(get_category_expenditure),
-        )
+        .route("/category/expenditure", post(get_category_expenditure))
         .with_state(shared_state);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8080").await.unwrap();
@@ -71,10 +68,14 @@ async fn get_categories(
 }
 
 async fn get_category_expenditure(
-    Path(budget_id): Path<String>,
     State(state): State<Arc<AppState>>,
+    Json(payload): Json<CategoryExpenditureInput>,
 ) -> Result<Json<Vec<Category>>, ApiError> {
-    match state.repository.category_spends(budget_id).await {
+    match state
+        .repository
+        .category_spends(payload.budget_id, payload.date)
+        .await
+    {
         Ok(categories) => Ok(Json(categories)),
         Err(e) => Err(ApiError::Error(e.to_string())),
     }
