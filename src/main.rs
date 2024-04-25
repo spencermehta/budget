@@ -1,5 +1,6 @@
 mod category;
 mod error;
+mod mongo_repository;
 mod repository;
 mod transaction;
 
@@ -11,17 +12,18 @@ use axum::{
 };
 use category::{Category, CategoryAssignment, CategoryExpenditureInput};
 use error::ApiError;
+use mongo_repository::MongoRepository;
 use repository::Repository;
 use std::sync::Arc;
 use transaction::Transaction;
 
 struct AppState {
-    repository: Repository,
+    repository: MongoRepository,
 }
 
 #[tokio::main]
 async fn main() {
-    let repository = Repository::new().await;
+    let repository = MongoRepository::new().await;
     let shared_state = Arc::new(AppState { repository });
     let app = Router::new()
         .route("/transaction/:budget_id", get(get_transactions))

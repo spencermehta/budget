@@ -1,39 +1,29 @@
-use mongodb::Collection;
-use std::env;
+use chrono::NaiveDate;
 
-use crate::{category::CategoryAssignment, transaction::Transaction};
-
-pub struct Repository {
-    pub db: mongodb::Database,
-    pub transactions: Collection<Transaction>,
-    pub categories: Collection<CategoryAssignment>,
-}
-
-use mongodb::{
-    options::{ClientOptions, ServerApi, ServerApiVersion},
-    Client,
+use crate::{
+    category::{Category, CategoryAssignment},
+    transaction::Transaction,
 };
 
-impl Repository {
-    pub async fn new() -> Repository {
-        let client = connect().await.unwrap();
-        let db = client.database("transactions");
-        let transactions = db.collection::<Transaction>("transactions");
-        let categories = db.collection::<CategoryAssignment>("categories");
+pub trait Repository {
+    async fn find_transactions(&self, budget_id: String) -> anyhow::Result<Vec<Transaction>>;
 
-        Repository {
-            db,
-            transactions,
-            categories,
-        }
-    }
-}
+    async fn insert_transaction(&self, transaction: Transaction) -> anyhow::Result<()>;
 
-async fn connect() -> mongodb::error::Result<Client> {
-    let connection_string = env::var("MONGO_STRING").unwrap();
-    let mut client_options = ClientOptions::parse(connection_string).await?;
-    let server_api = ServerApi::builder().version(ServerApiVersion::V1).build();
-    client_options.server_api = Some(server_api);
-    let client = Client::with_options(client_options)?;
-    Ok(client)
+    async fn list_categories(&self, budget_id: String) -> anyhow::Result<Vec<String>>;
+
+    async fn category_spends(
+        &self,
+        budget_id: String,
+        date: NaiveDate,
+    ) -> anyhow::Result<Vec<Category>>;
+
+    async fn assign_to_category(&self, category: CategoryAssignment) -> anyhow::Result<()>;
+
+    async fn get_category_assignment(
+        &self,
+        budget_id: &String,
+        category_name: &String,
+        date: NaiveDate,
+    ) -> anyhow::Result<CategoryAssignment>;
 }

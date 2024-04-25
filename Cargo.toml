@@ -14,3 +14,4 @@ tokio = { version = "1", features = ["full"] }
 bson = "2.10.0"
 futures-util = "0.3.30"
 axum = "0.7.5"
+anyhow = "1.0.82"
